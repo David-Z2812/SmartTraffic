@@ -39,7 +39,11 @@ public class FuncionPublisher_APIMQTT implements MqttCallback {
     @Override
     public void connectionLost(Throwable cause) {
         MySimpleLogger.error(loggerId, "Connection lost! Attempting to reconnect...");
-        connect();
+        try {
+            connect();
+        } catch (Exception e) {
+            MySimpleLogger.error(loggerId, "Reconnection attempt failed: " + e.getMessage());
+        }
     }
 
     @Override
@@ -48,36 +52,36 @@ public class FuncionPublisher_APIMQTT implements MqttCallback {
     }
 
     @Override
-	public void messageArrived(String topic, MqttMessage message) throws Exception {
-    try {
-        String payload = new String(message.getPayload()); // Convert payload to string
-        MySimpleLogger.debug(loggerId, "Message arrived on topic: " + topic + ", payload: " + payload);
+    public void messageArrived(String topic, MqttMessage message) throws Exception {
+        try {
+            String payload = new String(message.getPayload()); // Convert payload to string
+            MySimpleLogger.debug(loggerId, "Message arrived on topic: " + topic + ", payload: " + payload);
 
-        // Route to the appropriate processing method based on the topic
-        if (topic.contains("/info")) {
-            MySimpleLogger.debug(loggerId, "Processing info message.");
-            dispositivo.processInfoMessage(payload);
-        } else if (topic.contains("/traffic")) {
-            MySimpleLogger.debug(loggerId, "Processing traffic message.");
-            dispositivo.processTrafficMessage(payload);
-        } else {
-            MySimpleLogger.warn(loggerId, "Unknown topic: " + topic + ". Payload: " + payload);
+            // Route to the appropriate processing method based on the topic
+            if (topic.contains("/info")) {
+                MySimpleLogger.debug(loggerId, "Processing info message.");
+                dispositivo.processInfoMessage(payload);
+            } else if (topic.contains("/traffic")) {
+                MySimpleLogger.debug(loggerId, "Processing traffic message.");
+                dispositivo.processTrafficMessage(payload);
+            } else {
+                MySimpleLogger.warn(loggerId, "Unknown topic: " + topic + ". Payload: " + payload);
+            }
+        } catch (Exception e) {
+            MySimpleLogger.error(loggerId, "Error handling message on topic: " + topic + ". Exception: " + e.getMessage());
         }
-    } catch (Exception e) {
-        MySimpleLogger.error(loggerId, "Error handling message on topic: " + topic + ". Exception: " + e.getMessage());
     }
-}
 
     public void connect() {
-        if (myClient != null && myClient.isConnected()) {
-            MySimpleLogger.info(loggerId, "Client is already connected.");
-            return;
-        }
-
         try {
+            if (myClient != null && myClient.isConnected()) {
+                MySimpleLogger.info(loggerId, "Client is already connected.");
+                return;
+            }
+
             connOpt = new MqttConnectOptions();
             connOpt.setCleanSession(true);
-            connOpt.setKeepAliveInterval(30);
+            connOpt.setKeepAliveInterval(120);
 
             if (mqttUser != null && mqttPassword != null) {
                 connOpt.setUserName(mqttUser);
@@ -86,9 +90,14 @@ public class FuncionPublisher_APIMQTT implements MqttCallback {
 
             myClient = new MqttClient(mqttBroker, dispositivo.getId() + UUID.randomUUID(), new MqttDefaultFilePersistence("/tmp"));
             myClient.setCallback(this);
+            myClient.setTimeToWait(1000); // Set timeToWait to 1 second (1000 milliseconds)
+
             myClient.connect(connOpt);
 
             MySimpleLogger.info(loggerId, "Connected to broker: " + mqttBroker);
+
+            // Re-subscribe to topics after connecting
+            subscribeToTopics();
 
         } catch (MqttException e) {
             MySimpleLogger.error(loggerId, "Error connecting to broker: " + e.getMessage());
@@ -106,7 +115,7 @@ public class FuncionPublisher_APIMQTT implements MqttCallback {
         }
     }
 
-	public void iniciar() {
+    public void iniciar() {
         MySimpleLogger.info(loggerId, "Starting FuncionPublisher_APIMQTT...");
         connect();
     }
@@ -117,22 +126,28 @@ public class FuncionPublisher_APIMQTT implements MqttCallback {
     }
 
     public void publish_status(String topic, String message) {
-		try {
-			if (myClient == null || !myClient.isConnected()) {
-				connect(); // Ensure the client is connected
-			}
-	
-			MqttMessage mqttMessage = new MqttMessage(message.getBytes());
-			// mqttMessage.setQos(1); // Set QoS level
-	
-			myClient.publish(topic, mqttMessage);
-	
-			MySimpleLogger.info(loggerId, "Message published to topic: " + topic + " with message: " + message);
-	
-		} catch (MqttException e) {
-			MySimpleLogger.error(loggerId, "Error publishing message to topic: " + topic + ". Exception: " + e.getMessage());
-		}
-	}
+        try {
+            if (myClient == null || !myClient.isConnected()) {
+                MySimpleLogger.warn(loggerId, "Client is not connected. Attempting to reconnect...");
+                connect(); // Ensure the client is connected
+            }
+
+            MqttMessage mqttMessage = new MqttMessage(message.getBytes());
+            mqttMessage.setQos(1); // Set QoS level
+
+            myClient.publish(topic, mqttMessage);
+
+            MySimpleLogger.info(loggerId, "Message published to topic: " + topic + " with message: " + message);
+
+        } catch (MqttException e) {
+            MySimpleLogger.error(loggerId, "Error publishing message to topic: " + topic + ". Exception: " + e.getMessage());
+            // Attempt to reconnect if the client is disconnected
+            if (!myClient.isConnected()) {
+                MySimpleLogger.warn(loggerId, "Client disconnected. Attempting to reconnect...");
+                connect();
+            }
+        }
+    }
 
     public void subscribe(String topic) {
         try {
@@ -146,5 +161,14 @@ public class FuncionPublisher_APIMQTT implements MqttCallback {
         } catch (MqttException e) {
             MySimpleLogger.error(loggerId, "Error subscribing to topic: " + e.getMessage());
         }
+    }
+
+    private void subscribeToTopics() {
+        // Add your topics here
+        String infoTopic = "es/upv/pros/tatami/smartcities/traffic/PTPaterna/road/" + dispositivo.getId() + "/info";
+        String trafficTopic = "es/upv/pros/tatami/smartcities/traffic/PTPaterna/road/" + dispositivo.getId() + "/traffic";
+
+        subscribe(infoTopic);
+        subscribe(trafficTopic);
     }
 }

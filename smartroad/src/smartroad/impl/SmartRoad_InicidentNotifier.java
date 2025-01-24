@@ -56,6 +56,25 @@ public class SmartRoad_InicidentNotifier implements MqttCallback {
 	 */
 	@Override
 	public void messageArrived(String topic, MqttMessage message) throws Exception {
+		
+		JSONObject jsonMessage = new JSONObject(new String(message.getPayload()));
+		String vehicleRole = jsonMessage.getJSONObject("msg").getString("vehicle-role");
+
+		String road = jsonMessage.getJSONObject("msg").getString("road-segment");
+		int kp = jsonMessage.getJSONObject("msg").getInt("position");
+		String vehicle = jsonMessage.getJSONObject("msg").getString("vehicle-id");
+
+		JSONObject infoMessage = new JSONObject();
+		infoMessage.put("road", road);
+		infoMessage.put("kp", kp);
+		infoMessage.put("event", "noaccident");
+		infoMessage.put("vehicle", vehicle);
+
+		
+		if ("Ambulance".equals(vehicleRole)) {
+			notify(infoMessage.toString());
+		}
+
 	}
 
 	
@@ -123,5 +142,18 @@ public class SmartRoad_InicidentNotifier implements MqttCallback {
 	    		    	
 
 	}
+
+	public void subscribe(String myTopic) {
+		
+		// subscribe to topic
+		try {
+			int subQoS = 0;
+			myClient.subscribe(myTopic, subQoS);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
 	
 }

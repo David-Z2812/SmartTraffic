@@ -27,6 +27,7 @@ public class SmartCar {
 	protected IRoadPoint roadpoint = null;
 	protected boolean IsDriving = false;
 	protected SmartCar_StepSubscriber stepSubscriber = null;
+	protected int SpeedLimit = 100;		//maxima velocidad permitida en la carretera
 	
 	public SmartCar(String id, ESmartcarTypes type, ESmartcarRole role, int maxcarspeed, IRoute route) {
 		
@@ -46,9 +47,7 @@ public class SmartCar {
 		MySimpleLogger.info("main", "Current Position: " + this.roadpoint);
 		MySimpleLogger.info("main", "Remaining Route: " + this.navigator.getRoute());
 
-		this.navigator.startRouting();
-		MySimpleLogger.info("main", "Navigator Status: " + this.navigator.getNavigatorStatus().getName());
-		this.IsDriving = true;
+		
 		
 		this.subscriber = new SmartCar_RoadInfoSubscriber(this);
 		this.subscriber.connect();
@@ -65,6 +64,12 @@ public class SmartCar {
 
 	}
 	
+
+	public void startDriving() {
+		this.navigator.startRouting();
+		MySimpleLogger.info("main", "Navigator Status: " + this.navigator.getNavigatorStatus().getName());
+		this.IsDriving = true;
+	}
 	
 	public void setSmartCarID(String smartCarID) {
 		this.smartCarID = smartCarID;
@@ -91,10 +96,15 @@ public class SmartCar {
 		MySimpleLogger.info("main", "traffic updates done");
 
 		this.maxRoadSpeed = ESmartroadSegments.valueOf(this.rp.getRoad()).getMaxSpeed();
-		int newSpeed = Math.min(this.maxRoadSpeed, this.maxCarSpeed);
+		if (this.role == ESmartcarRole.Ambulance || this.role == ESmartcarRole.Police || this.role == ESmartcarRole.Firetruck || this.role == ESmartcarRole.Military) {
+			// no speed limit for emergency vehicles
+		}
+		else {
+		int newSpeed = Math.min(Math.min(this.maxRoadSpeed, this.maxCarSpeed),this.SpeedLimit);	// calcula la velocidad máxima permitida
 		if (newSpeed != this.current_vehicle_speed) {
 			MySimpleLogger.info("main", "Speed changed from " + this.current_vehicle_speed + " to " + newSpeed);
 			this.changeSpeed(newSpeed);
+		}
 		}
 		
 	}
@@ -140,5 +150,11 @@ public class SmartCar {
 	public boolean isDriving() {
 		return this.IsDriving;
 	}
+
+	public void setSpeedLimit(int speedLimit) {
+		this.SpeedLimit = speedLimit;
+        // Implementation for setting the speed limit
+
+    }
 
 }

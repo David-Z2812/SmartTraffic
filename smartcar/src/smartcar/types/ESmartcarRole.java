@@ -4,7 +4,7 @@ public enum ESmartcarRole {
     Unknown,
     PrivateUsage,
     PublicTransport,
-    MedicalAssistance,
+    Ambulance,
     Police,
     Military,
     Firetruck,

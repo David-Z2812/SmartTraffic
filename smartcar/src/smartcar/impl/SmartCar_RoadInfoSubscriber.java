@@ -9,6 +9,7 @@ import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 import org.eclipse.paho.client.mqttv3.MqttTopic;
 import org.json.JSONObject;
+import org.json.JSONException;
 
 public class SmartCar_RoadInfoSubscriber implements MqttCallback {
 
@@ -42,15 +43,33 @@ public class SmartCar_RoadInfoSubscriber implements MqttCallback {
 	}
 
 	@Override
-	public void messageArrived(String topic, MqttMessage message) throws Exception {
-		
-		String payload = new String(message.getPayload());
-		
-		// get the current speed limit of road segment
-		
-		
-		
-	}
+public void messageArrived(String topic, MqttMessage message){
+    String payload = new String(message.getPayload());
+ 
+    // Debug information
+    this._debug("Message arrived on topic: " + topic);
+    this._debug("Payload: " + payload);
+ 
+    // Check if the topic matches the signal topic pattern
+    if (topic.matches("es/upv/pros/tatami/smartcities/traffic/PTPaterna/road/" + this.smartcar.navigator.getCurrentPosition().getRoadSegment() + "/signals")) {
+			try {
+				JSONObject jsonPayload = new JSONObject(payload);
+ 
+				// Extract the "value" field
+				if (jsonPayload.has("value")) {
+					int value = jsonPayload.getInt("value");
+					this._debug("Extracted value: " + value);
+					this.smartcar.setSpeedLimit(value);
+				} else {
+					this._debug("The payload does not contain the 'value' key.");
+				}
+			} catch (JSONException e) {
+				this._debug("Failed to parse JSON payload: " + e.getMessage());
+			}
+   
+    }
+ 
+    }
 
 	/**
 	 * 

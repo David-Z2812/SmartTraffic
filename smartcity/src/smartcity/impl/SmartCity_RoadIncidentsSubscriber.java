@@ -52,51 +52,20 @@ public class SmartCity_RoadIncidentsSubscriber implements MqttCallback {
 		
 		String payload = new String(message.getPayload());
 		
+		// System.out.println("-------------------------------------------------");
+		// System.out.println("| Topic:" + topic);
+		// System.out.println("| Message: " + payload);
+		// System.out.println("-------------------------------------------------");
+		
+		// send ambulance to accident
+		this.city.ambulance.startDriving();
+		
 		System.out.println("-------------------------------------------------");
-		System.out.println("| Topic:" + topic);
-		System.out.println("| Message: " + payload);
+		System.out.println("-------------------------------------------------");
+		System.out.println("| AMBULANCE IS ON ITS WAY! |");
+		System.out.println("-------------------------------------------------");
 		System.out.println("-------------------------------------------------");
 		
-		// DO SOME MAGIC HERE!
-		
-		String url = "http://tambori.dsic.upv.es:10021/car/engine";
-		String putPayload = "{action:forward}";
-		
-		try{
-			URL obj = new URL(url);
-			HttpURLConnection con = (HttpURLConnection) obj.openConnection();
-	
-			// optional default is GET
-			con.setRequestMethod("PUT");
-	
-			//add request header
-			con.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36");
-			con.setRequestProperty("Content-Type", "application/json;");
-			con.setRequestProperty("Accept", "application/json;");
-			con.setRequestProperty("Accept-Language", "es");
-			
-			// Send Data
-			con.setDoOutput(true);
-			DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-			wr.writeBytes(putPayload);
-			wr.flush();
-			wr.close();
-	
-			BufferedReader in = new BufferedReader(new InputStreamReader(con.getInputStream(), "UTF-8"));
-			String inputLine;
-			StringBuffer response = new StringBuffer();
-	
-			while ((inputLine = in.readLine()) != null) {
-				response.append(inputLine);
-			}
-			in.close();
-			
-			System.out.println(response);
-
-		}catch(Exception e){
-			e.printStackTrace();
-		}
-
 	}
 
 	/**

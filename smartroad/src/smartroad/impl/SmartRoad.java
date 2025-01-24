@@ -14,6 +14,8 @@ public class SmartRoad {
 		
 		notifier = new SmartRoad_InicidentNotifier(this);
 		notifier.connect();
+		notifier.subscribe("es/upv/pros/tatami/smartcities/traffic/PTPaterna/road/" + id + "/traffic");
+		
 
 	}
 

@@ -7,9 +7,9 @@
 
         {
             "type": "java",
-            "name": "SmartCarStarter",
+            "name": "TestScenarioStarter",
             "request": "launch",
-            "mainClass": "smartcar.starter.SmartCarStarter",
+            "mainClass": "smartcar.starter.TestScenarioStarter",
             "projectName": "smartcar"
         }
     ]

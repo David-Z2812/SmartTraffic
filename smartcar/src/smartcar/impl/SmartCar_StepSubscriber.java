@@ -48,8 +48,10 @@ public class SmartCar_StepSubscriber implements MqttCallback {
 		String payload = new String(message.getPayload());
 		int Step_time_ms = 3000;
 		
+		JSONObject jsonObject = new JSONObject(payload);
+		int step = jsonObject.getJSONObject("msg").getInt("step");
 		System.out.println("-------------------------------------------------");
-		System.out.println("New Simulation Step: " + payload);
+		System.out.println("New Simulation Step: " + step);
 		System.out.println("-------------------------------------------------");
 		
 		this.smartcar.Drive(Step_time_ms);

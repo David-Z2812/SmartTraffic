@@ -14,12 +14,12 @@ public class PanelInformativo extends Dispositivo {
         super(deviceId);
         this.roadSegment = roadSegment;
         this.initialize(this.mqttBrokerURL);
-        // this.getFuncion("f1").apagar(); // Default to OFF
-        // this.getFuncion("f2").apagar(); // Default to OFF
-        // this.getFuncion("f3").apagar(); // Default to OFF
-        // this.publishFunctionState("f1");
-        // this.publishFunctionState("f2");
-        // this.publishFunctionState("f3");
+        this.getFuncion("f1").apagar(); // Default to OFF
+        this.getFuncion("f2").apagar(); // Default to OFF
+        this.getFuncion("f3").apagar(); // Default to OFF
+        this.publishFunctionState("f1");
+        this.publishFunctionState("f2");
+        this.publishFunctionState("f3");
     }
 
     public void initialize(String mqttBrokerURL) {
@@ -49,6 +49,7 @@ public class PanelInformativo extends Dispositivo {
     @Override
     public void processInfoMessage(String payload) {
     try {
+        MySimpleLogger.debug("PanelInformativo-" + deviceId, "Processing info message payload: " + payload);
         JSONObject data = new JSONObject(payload);
 
         String status = data.optString("status", "");
@@ -56,26 +57,30 @@ public class PanelInformativo extends Dispositivo {
 
         // Handle accident alert (f2)
         if ("accident".equals(event)) {
+            MySimpleLogger.debug("PanelInformativo-" + deviceId, "Event is accident. Setting f2 to blink.");
             this.getFuncion("f2").parpadear();
             this.publishFunctionState("f2"); // Publish updated state
         } else {
+            MySimpleLogger.debug("PanelInformativo-" + deviceId, "Event is not accident. Turning off f2.");
             this.getFuncion("f2").apagar();
             this.publishFunctionState("f2"); // Publish updated state
         }
 
         // Handle congestion status (f1)
         if ("Free_Flow".equals(status) || "Mostly_Free_Flow".equals(status)) {
+            MySimpleLogger.debug("PanelInformativo-" + deviceId, "Status is Free_Flow or Mostly_Free_Flow. Turning off f1.");
             this.getFuncion("f1").apagar();
             this.publishFunctionState("f1"); // Publish updated state
         } else if ("Limited_Manouvers".equals(status)) {
+            MySimpleLogger.debug("PanelInformativo-" + deviceId, "Status is Limited_Manouvers. Setting f1 to blink.");
             this.getFuncion("f1").parpadear();
             this.publishFunctionState("f1"); // Publish updated state
         } else if ("No_Manouvers".equals(status) || "Collapsed".equals(status)) {
             this.getFuncion("f1").encender();
             this.publishFunctionState("f1"); // Publish updated state
+        } else {
+            MySimpleLogger.debug("PanelInformativo-" + deviceId, "Status is not recognized. No action taken for f1.");
         }
-
-       
 
     } catch (Exception e) {
         MySimpleLogger.error("PanelInformativo-"+deviceId, "Error processing info message: " + e.getMessage());
